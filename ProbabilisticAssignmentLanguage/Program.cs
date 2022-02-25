@@ -13,7 +13,8 @@ namespace ProbabilisticAssignmentLanguage
 
 
 
-/*CONCRETE SYNTAX
+/*
+CONCRETE SYNTAX
 
 G : Program
 C : Command
@@ -35,14 +36,17 @@ skip
 | C1 ; C2
 | if B then C1 else C2
 | while B do C
-| observe B
+| observe PB
 | bool IB = B
 | int IE = E
 | prob IP = P
 
-E::= + | - | * | / | %
+A::= + | - | * | / | %
 
-B::= O | (B1 and B2) | (B1 or B2) | (not B)
+B::= O | (B1 and B2) | (B1 or B2) | (not B) | (E1 > E2) | (E1 < E2)
+
+PB::= B | (PB1 and PB2) | (PB1 or PB2) | (not PB) |
+      (P > E) | (P < E) | (E > P) | (E < P)
 
 E::= N | (E1 A E2)
 
@@ -51,5 +55,15 @@ P::= R | (P1 x P2) | (P1 A P2) | (P A E) | (E A P)
 R::= [ RR ]
 
 RR::= E | E , RR
+
+*/
+
+/*
+Example Program:
+
+prob x = [0, 1];
+prob y = [0, 1];
+prob z = x + y;
+observe not (z < 1)
 
 */
