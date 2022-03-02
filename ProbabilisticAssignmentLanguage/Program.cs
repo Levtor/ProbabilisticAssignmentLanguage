@@ -43,14 +43,14 @@ skip
 
 A::= + | - | * | / | %
 
-B::= O | (B1 and B2) | (B1 or B2) | (not B) | (E1 > E2) | (E1 < E2)
+B::= O | (B) | B1 and B2 | B1 or B2 | not B | E1 > E2 | E1 < E2
 
-PB::= B | (PB1 and PB2) | (PB1 or PB2) | (not PB) |
-      (P > E) | (P < E) | (E > P) | (E < P)
+PB::= B | (PB) | PB1 and PB2 | PB1 or PB2 | not PB |
+      P > E | P < E | E > P | E < P | P1 > P2 | P1 < P2
 
-E::= N | (E1 A E2)
+E::= N | (E) | E1 A E2
 
-P::= R | (P1 x P2) | (P1 A P2) | (P A E) | (E A P)
+P::= R | (P) | P1 x P2 | P1 # P2 | P1 A P2 | P A E | E A P
 
 R::= [ RR ]
 
