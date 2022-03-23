@@ -4,79 +4,26 @@ using System.Text;
 
 namespace ProbabilisticAssignmentLanguage
 {
-    enum Token
-    {
-        Skip,
-        Semi,
-        Observe,
-        Out,
-
-        If,
-        Then,
-        Else,
-        While,
-        Do,
-
-        BoolDecl,
-        IntDecl,
-        ProbDecl,
-
-        VarName,
-        IntVal,
-        BoolTrue,
-        BoolFalse,
-
-        Plus,
-        Minus,
-        Mult,
-        Div,
-        Mod,
-
-        And,
-        Or,
-        Not,
-        Greater,
-        Lesser,
-        Equal,
-
-        LParen,
-        RParen,
-        LBrack,
-        RBrack,
-        Comma
-    }
-
     class Program
     {
-        /// <summary>
-        /// List of tokens interpreted from the input string
-        /// </summary>
-        List<Token> Tokens;
-
-        /// <summary>
-        /// List of numbers interpreted from the input string
-        /// </summary>
-        List<int> NumberFromParser;
-
-        /// <summary>
-        /// List of variable name strings interpreted from the input string
-        /// </summary>
-        List<string> VariableNamesFromParser;
-
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
         }
 
+
         /// <summary>
         /// Takes a string and turns it into 3 lists, one for tokens, numbers, and variable names
         /// </summary>
         /// <param name="input">the string of input code</param>
-        private void LexicalAnalysis(string input)
+        /// <param name="tokens">a list for the tokens to be held in</param>
+        /// <param name="numbers">a list for the numbers associated with IntVal tokens to be held in</param>
+        /// <param name="variableNames">a list for the strings associated with VarName tokens to be held in</param>
+        private void Tokenizer(string input, Queue<Token> tokens, Queue<int> numbers, Queue<string> variableNames)
         {
-            Tokens = new List<Token>();
-            NumberFromParser = new List<int>();
-            VariableNamesFromParser = new List<string>();
+            tokens = new Queue<Token>();
+            numbers = new Queue<int>();
+            variableNames = new Queue<string>();
             bool midNum = false;
             int numToAdd = 0;
             bool midString = false;
@@ -85,8 +32,9 @@ namespace ProbabilisticAssignmentLanguage
             // Loops through each character in the string
             foreach (char c in input)
             {
+                if (char.IsWhiteSpace(c)) continue;
                 bool addedToString = false;
-                //if the character is a digit, extend the saved number, but don't add it to the list
+                //if the character is a digit,
                 if (char.IsDigit(c))
                 {
                     //and if the parser is in the middle of a string, extend but don't end the string
@@ -110,8 +58,8 @@ namespace ProbabilisticAssignmentLanguage
                     //numbers list. Also, the appropriate token is added to the token list
                     if (midNum)
                     {
-                        Tokens.Add(Token.IntVal);
-                        NumberFromParser.Add(numToAdd);
+                        tokens.Enqueue(Token.IntVal);
+                        numbers.Enqueue(numToAdd);
                         //ends the number and stops tracking it
                         numToAdd = 0;
                         midNum = false;
@@ -120,55 +68,55 @@ namespace ProbabilisticAssignmentLanguage
                     switch (c)
                     {
                         case ';':
-                            Tokens.Add(Token.Semi);
+                            tokens.Enqueue(Token.Semi);
                             break;
                         case '+':
-                            Tokens.Add(Token.Plus);
+                            tokens.Enqueue(Token.Plus);
                             break;
                         case '-':
-                            Tokens.Add(Token.Minus);
+                            tokens.Enqueue(Token.Minus);
                             break;
                         case '*':
-                            Tokens.Add(Token.Mult);
+                            tokens.Enqueue(Token.Mult);
                             break;
                         case '/':
-                            Tokens.Add(Token.Div);
+                            tokens.Enqueue(Token.Div);
                             break;
                         case '%':
-                            Tokens.Add(Token.Mod);
+                            tokens.Enqueue(Token.Mod);
                             break;
                         case '&':
-                            Tokens.Add(Token.And);
+                            tokens.Enqueue(Token.And);
                             break;
                         case '|':
-                            Tokens.Add(Token.Or);
+                            tokens.Enqueue(Token.Or);
                             break;
                         case '!':
-                            Tokens.Add(Token.Not);
+                            tokens.Enqueue(Token.Not);
                             break;
                         case '>':
-                            Tokens.Add(Token.Greater);
+                            tokens.Enqueue(Token.Greater);
                             break;
                         case '<':
-                            Tokens.Add(Token.Lesser);
+                            tokens.Enqueue(Token.Lesser);
                             break;
                         case '=':
-                            Tokens.Add(Token.Equal);
+                            tokens.Enqueue(Token.Equal);
                             break;
                         case '(':
-                            Tokens.Add(Token.LParen);
+                            tokens.Enqueue(Token.LParen);
                             break;
                         case ')':
-                            Tokens.Add(Token.RParen);
+                            tokens.Enqueue(Token.RParen);
                             break;
                         case '[':
-                            Tokens.Add(Token.LBrack);
+                            tokens.Enqueue(Token.LBrack);
                             break;
                         case ']':
-                            Tokens.Add(Token.RBrack);
+                            tokens.Enqueue(Token.RBrack);
                             break;
                         case ',':
-                            Tokens.Add(Token.Comma);
+                            tokens.Enqueue(Token.Comma);
                             break;
                         //if no appropriate one-character token is detected, begin or continue a string and add the character to said string
                         default:
@@ -186,45 +134,48 @@ namespace ProbabilisticAssignmentLanguage
                         switch (nonSymbol)
                         {
                             case "observe":
-                                Tokens.Add(Token.Observe);
+                                tokens.Enqueue(Token.Observe);
                                 break;
                             case "out":
-                                Tokens.Add(Token.Out);
+                                tokens.Enqueue(Token.Out);
                                 break;
                             case "if":
-                                Tokens.Add(Token.If);
+                                tokens.Enqueue(Token.If);
                                 break;
                             case "then":
-                                Tokens.Add(Token.Then);
+                                tokens.Enqueue(Token.Then);
                                 break;
                             case "else":
-                                Tokens.Add(Token.Else);
+                                tokens.Enqueue(Token.Else);
                                 break;
                             case "while":
-                                Tokens.Add(Token.While);
+                                tokens.Enqueue(Token.While);
                                 break;
                             case "do":
-                                Tokens.Add(Token.Do);
+                                tokens.Enqueue(Token.Do);
+                                break;
+                            case "end":
+                                tokens.Enqueue(Token.End);
                                 break;
                             case "bool":
-                                Tokens.Add(Token.BoolDecl);
+                                tokens.Enqueue(Token.BoolDecl);
                                 break;
                             case "int":
-                                Tokens.Add(Token.IntDecl);
+                                tokens.Enqueue(Token.IntDecl);
                                 break;
                             case "prob":
-                                Tokens.Add(Token.ProbDecl);
+                                tokens.Enqueue(Token.ProbDecl);
                                 break;
                             case "true":
-                                Tokens.Add(Token.BoolTrue);
+                                tokens.Enqueue(Token.BoolTrue);
                                 break;
                             case "false":
-                                Tokens.Add(Token.BoolFalse);
+                                tokens.Enqueue(Token.BoolFalse);
                                 break;
                             //also adds the string as a variable name to the variables list if appropriate
                             default:
-                                Tokens.Add(Token.VarName);
-                                VariableNamesFromParser.Add(nonSymbol);
+                                tokens.Enqueue(Token.VarName);
+                                variableNames.Enqueue(nonSymbol);
                                 break;
                         }
                         //ends the string and stops tracking it
@@ -236,60 +187,58 @@ namespace ProbabilisticAssignmentLanguage
             //if a number was being tracked at the very end, adds the number and appropriate token to the lists
             if (midNum)
             {
-                Tokens.Add(Token.IntVal); 
-                NumberFromParser.Add(numToAdd);
+                tokens.Enqueue(Token.IntVal); 
+                numbers.Enqueue(numToAdd);
+            }
+        }
+
+
+        private SyntaxTree ParserToTokenTree(Queue<Token> tokens, Queue<int> numbers, Queue<string> variableNames)
+        {
+            Token eval = tokens.Dequeue();
+            while (tokens.Count > 0)
+            {
+                switch (eval)
+                {
+                    case Token.Skip:
+                    case Token.Semi:
+                    case Token.Observe:
+                    case Token.Out:
+                    case Token.If:
+                    case Token.Then:
+                    case Token.Else:
+                    case Token.While:
+                    case Token.Do:
+                    case Token.BoolDecl:
+                    case Token.IntDecl:
+                    case Token.ProbDecl:
+                    case Token.VarName:
+                    case Token.IntVal:
+                    case Token.BoolTrue:
+                    case Token.BoolFalse:
+                    case Token.Plus:
+                    case Token.Minus:
+                    case Token.Mult:
+                    case Token.Div:
+                    case Token.Mod:
+                    case Token.And:
+                    case Token.Or:
+                    case Token.Not:
+                    case Token.Greater:
+                    case Token.Lesser:
+                    case Token.Equal:
+                    case Token.LParen:
+                    case Token.RParen:
+                    case Token.LBrack:
+                    case Token.RBrack:
+                    case Token.End:
+                    case Token.Comma:
+                }
             }
         }
     }
 }
 
-
-
-/*
-CONCRETE SYNTAX
-
-G : Program
-C : Command
-B : Boolean Expression
-E : Integer Expression
-P : Probabilistic Distribution Expression
-A : Arithmetic Operator
-
-O::= true | false
-N::= strings of digits
-IB, IE, and IP::= strings of letters or digits or underscore,
-                  starting with a letter,
-                  not including keywords
-
-G ::= C
-
-C::=
-skip
-| C1 ; C2
-| if B then C1 else C2
-| while B do C
-| observe PB
-| bool IB = B
-| int IE = E
-| prob IP = P
-| out IP
-
-A::= + | - | * | / | %
-
-B::= O | (B) | B1 & B2 | B1 "|" B2 | !B | E1 > E2 | E1 < E2 | E1=E2
-
-PB::= B | (PB) | PB1 & PB2 | PB1 "|" PB2 | !PB |
-      P > E | P < E | P=E | E > P | E < P | E==P | P1 > P2 | P1 < P2 | P1=P2
-
-E::= N | (E) | E1 A E2
-
-P::= R | (P) | P1 A P2 | P A E | E A P
-
-R::= [ RR ]
-
-RR::= (E, E) | (E, E), RR
-
-*/
 
 
 /* Example Program:
