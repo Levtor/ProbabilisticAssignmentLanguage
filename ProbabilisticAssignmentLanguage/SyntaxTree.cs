@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace ProbabilisticAssignmentLanguage
 {
@@ -40,6 +38,8 @@ namespace ProbabilisticAssignmentLanguage
 
     // Command (C)
     public interface Command: SyntaxTree { }
+    // skip
+    public struct Skip : Command { }
     // C1 ; C2
     public struct Semicolon : Command
     {
@@ -49,156 +49,75 @@ namespace ProbabilisticAssignmentLanguage
     // if B then C1 else C2 ; end
     public struct IfThenElse : Command
     {
-        public ArithBoolExp BoolIf;
+        public Exp BoolIf;
         public Command CommandThen;
         public Command CommandElse;
     }
     // while B do C ; end
     public struct WhileDo : Command
     {
-        public ArithBoolExp BoolWhile;
-        public Command Command2;
+        public Exp BoolWhile;
+        public Command Command;
     }
     // observe PB
     public struct Observe : Command
     {
-        public ProbBoolExp ProbBool;
+        public Exp ProbBool;
     }
     // bool IB = B
     public struct DeclareBool : Command
     {
         public string VarName;
-        public ArithBoolExp Bool;
+        public Exp Bool;
     }
     // int IE = E
     public struct DeclareInt : Command
     {
         public string VarName;
-        public ArithExp Integer;
+        public Exp Integer;
     }
     // prob IP = P
     public struct DeclareProb : Command
     {
         public string VarName;
-        public ProbExp Prob;
+        public Exp Prob;
     }
     // out P
     public struct Out : Command
     {
-        public ProbExp ProbOut;
+        public Exp ProbOut;
     }
-
-    // Probabilistic Boolean Expression (PB)
-    public interface ProbBoolExp : SyntaxTree { }
-    // ! PB
-    public struct ProbBoolNot : ArithBoolExp
+    
+    public interface Exp : SyntaxTree { }
+    public struct Not : Exp
     {
-        public ProbBoolExp ProbBoolToReverse;
+        public Exp ExpToReverse;
     }
-    // PB1 & PB2  |  PB1 | PB2
-    public struct ProbBoolCompareProbBools : ArithBoolExp
+    public struct ExpCombine : Exp
     {
         public Token Operator;
-        public ProbBoolExp ProbBoolExp1;
-        public ProbBoolExp ProbBoolExp2;
+        public Exp Exp1;
+        public Exp Exp2;
     }
-    // P1 > P2 | P1 < P2 | P1 = P2
-    public struct ProbBoolCompareProbs : ArithBoolExp
-    {
-        public Token Operator;
-        public ProbExp ProbExp1;
-        public ProbExp ProbExp2;
-    }
-    // P > E | P < E | P = E | E > P | E < P | E = P
-    public struct ProbBoolCompareProbToArith : ArithBoolExp
-    {
-        public Token Operator;
-        public ProbExp ProbExp;
-        public ArithExp ArithExp;
-    }
-
-    // Boolean Expression (B)
-    public interface ArithBoolExp : ProbBoolExp, SyntaxTree { }
-    // O
-    public struct ArithBoolMonad : ArithBoolExp
-    {
-        public bool Bool;
-    }
-    // IB
-    public struct ArithBoolVar : ArithBoolExp
+    public struct Var : Exp
     {
         public string VarName;
     }
-    // ! B
-    public struct ArithBoolNot : ArithBoolExp
-    {
-        public ArithBoolExp BoolToReverse;
-    }
-    // B1 & B2  |  B1 | B2
-    public struct ArithBoolCompareBools : ArithBoolExp
-    {
-        public Token Operator;
-        public ArithBoolExp ArithBoolExp1;
-        public ArithBoolExp ArithBoolExp2;
-    }
-    // E1 > E2 | E1 < E2 | E1 = E2
-    public struct ArithBoolCompareAriths : ArithBoolExp
-    {
-        public Token Operator;
-        public ArithExp ArithExp1;
-        public ArithExp ArithExp2;
-    }
-
-    // Probabilistic Expression (P)
-    public interface ProbExp : SyntaxTree { }
-    // RR
-    public struct ProbElement
-    {
-        public int Value { get; }
-        public int Weight { get; set; }
-    }
-    // R
-    public struct Prob : ProbExp
-    {
-        public int Index;
-    }
-    // IP
-    public struct ProbVar : ProbExp
-    {
-        public string VarName;
-    }
-    // P1 A P2
-    public struct ProbCombineProbs : ProbExp
-    {
-        public Token Operator;
-        public ProbExp ProbExp1;
-        public ProbExp ProbExp2;
-    }
-    // P A E | E A P
-    public struct ProbCombineProbAndArith : ProbExp
-    {
-        public Token Operator;
-        public ProbExp ProbExp;
-        public ArithExp ArithExp;
-    }
-
-    // Arithmetic Expression (E)
-    public interface ArithExp : SyntaxTree { }
-    // N
-    public struct Integer : ArithExp
+    public struct ArithMonad : Exp
     {
         public int Value;
     }
-    // IE
-    public struct ArithVar : ArithExp
+    public struct BoolMonad : Exp
     {
-        public string VarName;
+        public bool Bool;
     }
-    // E1 A E2
-    public struct IntegerCombine : ArithExp
+    public struct ProbMonad : Exp
     {
-        public Token Operator;
-        public ArithExp ArithExp1;
-        public ArithExp ArithExp2;
+        public List<ProbElement> Elements;
+    }
+    public struct ProbElement
+    {
+        public Exp Value;
+        public Exp Weight;
     }
 }

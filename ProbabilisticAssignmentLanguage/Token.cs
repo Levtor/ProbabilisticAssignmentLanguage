@@ -27,21 +27,24 @@ namespace ProbabilisticAssignmentLanguage
         BoolTrue,
         BoolFalse,
 
+        Not,
+
+        And,
+        Or,
+
+        Greater,
+        Lesser,
+        Equal,
+
         Plus,
         Minus,
         Mult,
         Div,
         Mod,
 
-        And,
-        Or,
-        Not,
-        Greater,
-        Lesser,
-        Equal,
-
         LParen,
         RParen,
+
         LBrack,
         RBrack,
         Comma
