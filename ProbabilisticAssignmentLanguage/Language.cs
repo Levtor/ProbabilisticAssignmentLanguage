@@ -437,7 +437,17 @@ namespace ProbabilisticAssignmentLanguage
                     commandTree = new Observe { ProbBool = ParseExp(tokens, numbers, variableNames) };
                     break;
                 case Token.Out:
-                    commandTree = new Out { ProbOut = ParseExp(tokens, numbers, variableNames) };
+                    List<Exp> outProbs = new List<Exp>();
+                    if (tokens.Dequeue() != Token.LBrack) throw new Exception("'[' expected but not found while parsing out command");
+                    bool moreToGo = true;
+                    while (moreToGo)
+                    {
+                        outProbs.Add(ParseExp(tokens, numbers, variableNames));
+                        Token miniNext = tokens.Dequeue();
+                        if (miniNext == Token.RBrack) moreToGo = false;
+                        else if (miniNext != Token.Comma) throw new Exception("']' or ',' expected but not found while parsing out command");
+                    }
+                    commandTree = new Out { ProbsOut = outProbs };
                     break;
                 case Token.If:
                     IfThenElse ite = new IfThenElse();
@@ -602,7 +612,7 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="masterObserveList">a list of all the probabilistic boolean expressions in observe statements</param>
         /// <param name="masterOutList">a list of all the probs in out statements</param>
         private void InterpretCommand(Command tree, Dictionary<string, Exp> variables,
-            List<ProbMonad> masterProbList, List<Exp> masterObserveList, List<Exp> masterOutList)
+            List<ProbMonad> masterProbList, List<Exp> masterObserveList, List<List<Exp>> masterOutList)
         {
             Exp exp;
             ExpressionType et;
@@ -667,12 +677,17 @@ namespace ProbabilisticAssignmentLanguage
             }
             else if (tree is Out outCommand)
             {
-                et = InterpretExpression(outCommand.ProbOut, variables, masterProbList, out exp);
-                if (et == ExpressionType.Prob)
+                List<Exp> toAddToMasterOutList = new List<Exp>();
+                foreach (Exp expression in outCommand.ProbsOut)
                 {
-                    masterOutList.Add(exp);
+                    et = InterpretExpression(expression, variables, masterProbList, out exp);
+                    if (et == ExpressionType.Prob)
+                    {
+                        toAddToMasterOutList.Add(exp);
+                    }
+                    else throw new Exception("out statement has expression that is not a prob");
                 }
-                else throw new Exception("out statement used on expression that is not a prob");
+                masterOutList.Add(toAddToMasterOutList);
             }
             else throw new Exception("command interpreter is trying to interpret something that isn't a command");
         }
@@ -810,7 +825,7 @@ namespace ProbabilisticAssignmentLanguage
                 }
                 else if (type == ExpressionType.PBool)
                 {
-                    value = new Not { ExpToReverse = not.ExpToReverse };
+                    value = new Not { ExpToReverse = subValue };
                     return ExpressionType.PBool;
                 }
                 else throw new Exception("'!' operator applied to non-boolean expression");
@@ -850,10 +865,20 @@ namespace ProbabilisticAssignmentLanguage
             else throw new Exception("expression interpreter is trying to interpret something that isn't an expression");
         }
 
-
-        private List<ElementReducedProb> CalculateOutput(List<ProbMonad> masterProbList, List<Exp> masterObserveList, List<Exp> masterOutList)
+        /// <summary>
+        /// Calculates the output of a program given its basic prob monads, observe statements, and out statements
+        /// </summary>
+        /// <param name="masterProbList">a list of basic prob monads</param>
+        /// <param name="masterObserveList">a list of observe statements</param>
+        /// <param name="masterOutList">a list of out statements</param>
+        /// <returns>a list of dictionaries representing each out statement's probability distribution when subject to all observe statements</returns>
+        private Dictionary<string, int>[] CalculateOutput(List<ProbMonad> masterProbList, List<Exp> masterObserveList, List<List<Exp>> masterOutList)
         {
-            List<ElementReducedProb> output = new List<ElementReducedProb>();
+            Dictionary<string, int>[] output = new Dictionary<string, int>[masterOutList.Count];
+            for(int k = 0; k < masterOutList.Count; k++)
+            {
+                output[k] = new Dictionary<string, int>();
+            }
             int[] indices = new int[masterProbList.Count];
             int probNumber = 1;
             for (int i = 0; i < masterProbList.Count; i++)
@@ -885,29 +910,57 @@ namespace ProbabilisticAssignmentLanguage
                 }
                 if (survivedObserves)
                 {
-                    foreach (Exp outProb in masterOutList)
+                    for (int k = 0; k < masterOutList.Count; k++)
                     {
-                        if (InterpretProbExpression(outProb, indices, masterProbList, out ExpressionType type) is ElementReducedProb erp)
+                        StringBuilder key = new StringBuilder();
+                        int weight = 1;
+                        foreach (Exp outProb in masterOutList[k])
                         {
-                            output.Add(erp);
+                            if (InterpretProbExpression(outProb, indices, masterProbList, out ExpressionType type) is ElementReducedProb erp)
+                            {
+                                key.Append(erp.Value);
+                                key.Append(", ");
+                                weight *= erp.Weight;
+                            }
+                            else throw new Exception("out list has an expression in it that isn't a prob");
                         }
-                        else throw new Exception("out list has an expression in it that isn't a prob");
+                        key.Remove(key.Length - 2, 2);
+                        string keyString = key.ToString();
+                        if (output[k].TryGetValue(keyString, out int unused)) output[k][keyString] += weight;
+                        else output[k].Add(keyString, weight);
                     }
                 }
             }
             return output;
         }
 
+        /// <summary>
+        /// the return type of the below function; it can be either a boolean or a value-weight pair
+        /// </summary>
         interface ReducedProb { };
+        /// <summary>
+        /// the boolean version of ReducedProb, the return type of the below function
+        /// </summary>
         struct BoolReducedProb : ReducedProb
         {
             public bool Bool;
         }
-        public struct ElementReducedProb : ReducedProb
+        /// <summary>
+        /// the value-weight pair version of ReducedProb, the return type of the below function
+        /// </summary>
+        struct ElementReducedProb : ReducedProb
         {
             public int Value;
             public int Weight;
         }
+        /// <summary>
+        /// Calculates the boolean or value-weight pair value of a probabilistic expression at a specific point
+        /// </summary>
+        /// <param name="tree">the probabilistic expression</param>
+        /// <param name="indices">an array describing the point in the probabilistic expression being examined</param>
+        /// <param name="masterProbList">the list of basic probabilistic distributions defined in the program</param>
+        /// <param name="type">an out variable that designates whether the returned expression is a boolean or a value-weight pair</param>
+        /// <returns>the boolean or value-weight pair that the given probabilistic expression evaluates to at the given point</returns>
         private ReducedProb InterpretProbExpression(Exp tree, int[] indices, List<ProbMonad> masterProbList, out ExpressionType type)
         {
             if (tree is ExpCombine combine)
@@ -919,35 +972,35 @@ namespace ProbabilisticAssignmentLanguage
                 switch ((subType1, subType2, combine.Operator))
                 {
 
-                    case (ExpressionType.Arith, ExpressionType.Arith, Token.Plus):
+                    case (ExpressionType.Prob, ExpressionType.Prob, Token.Plus):
                         type = ExpressionType.Prob;
                         return new ElementReducedProb
                         {
                             Value = (subValue1 as ElementReducedProb?).Value.Value + (subValue2 as ElementReducedProb?).Value.Value,
                             Weight = (subValue1 as ElementReducedProb?).Value.Weight * (subValue2 as ElementReducedProb?).Value.Weight,
                         };
-                    case (ExpressionType.Arith, ExpressionType.Arith, Token.Minus):
+                    case (ExpressionType.Prob, ExpressionType.Prob, Token.Minus):
                         type = ExpressionType.Prob;
                         return new ElementReducedProb
                         {
                             Value = (subValue1 as ElementReducedProb?).Value.Value - (subValue2 as ElementReducedProb?).Value.Value,
                             Weight = (subValue1 as ElementReducedProb?).Value.Weight * (subValue2 as ElementReducedProb?).Value.Weight,
                         };
-                    case (ExpressionType.Arith, ExpressionType.Arith, Token.Mult):
+                    case (ExpressionType.Prob, ExpressionType.Prob, Token.Mult):
                         type = ExpressionType.Prob;
                         return new ElementReducedProb
                         {
                             Value = (subValue1 as ElementReducedProb?).Value.Value * (subValue2 as ElementReducedProb?).Value.Value,
                             Weight = (subValue1 as ElementReducedProb?).Value.Weight * (subValue2 as ElementReducedProb?).Value.Weight,
                         };
-                    case (ExpressionType.Arith, ExpressionType.Arith, Token.Div):
+                    case (ExpressionType.Prob, ExpressionType.Prob, Token.Div):
                         type = ExpressionType.Prob;
                         return new ElementReducedProb
                         {
                             Value = (subValue1 as ElementReducedProb?).Value.Value / (subValue2 as ElementReducedProb?).Value.Value,
                             Weight = (subValue1 as ElementReducedProb?).Value.Weight * (subValue2 as ElementReducedProb?).Value.Weight,
                         };
-                    case (ExpressionType.Arith, ExpressionType.Arith, Token.Mod):
+                    case (ExpressionType.Prob, ExpressionType.Prob, Token.Mod):
                         type = ExpressionType.Prob;
                         return new ElementReducedProb
                         {
@@ -955,13 +1008,13 @@ namespace ProbabilisticAssignmentLanguage
                             Weight = (subValue1 as ElementReducedProb?).Value.Weight * (subValue2 as ElementReducedProb?).Value.Weight,
                         };
 
-                    case (ExpressionType.Arith, ExpressionType.Arith, Token.Greater):
+                    case (ExpressionType.Prob, ExpressionType.Prob, Token.Greater):
                         type = ExpressionType.Bool;
                         return new BoolReducedProb { Bool = (subValue1 as ElementReducedProb?).Value.Value > (subValue2 as ElementReducedProb?).Value.Value };
-                    case (ExpressionType.Arith, ExpressionType.Arith, Token.Lesser):
+                    case (ExpressionType.Prob, ExpressionType.Prob, Token.Lesser):
                         type = ExpressionType.Bool;
                         return new BoolReducedProb { Bool = (subValue1 as ElementReducedProb?).Value.Value < (subValue2 as ElementReducedProb?).Value.Value };
-                    case (ExpressionType.Arith, ExpressionType.Arith, Token.Equal):
+                    case (ExpressionType.Prob, ExpressionType.Prob, Token.Equal):
                         type = ExpressionType.Bool;
                         return new BoolReducedProb { Bool = (subValue1 as ElementReducedProb?).Value.Value == (subValue2 as ElementReducedProb?).Value.Value };
 
@@ -1009,7 +1062,7 @@ namespace ProbabilisticAssignmentLanguage
             else throw new Exception("expression interpreter is trying to interpret something that isn't an expression (probabilistic)");
         }
 
-        public List<ElementReducedProb> TestInterpreterWithExampleProgram(string s)
+        public Dictionary<string, int>[] TestInterpreterWithExampleProgram(string s)
         {
             Queue<Token> tokens = new Queue<Token>();
             Queue<int> numbers = new Queue<int>();
@@ -1019,7 +1072,7 @@ namespace ProbabilisticAssignmentLanguage
             Dictionary<string, Exp> variablesDict = new Dictionary<string, Exp>();
             List<ProbMonad> masterProbList = new List<ProbMonad>();
             List<Exp> masterObserveList = new List<Exp>();
-            List<Exp> masterOutList = new List<Exp>();
+            List<List<Exp>> masterOutList = new List<List<Exp>>();
             InterpretCommand(cmd, variablesDict, masterProbList, masterObserveList, masterOutList);
             return CalculateOutput(masterProbList, masterObserveList, masterOutList);
         }

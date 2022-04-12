@@ -17,7 +17,9 @@ namespace ProbabilisticAssignmentLanguage
     | bool IB = B
     | int IE = E
     | prob IP = P
-    | out P
+    | out [U]
+    
+    OutConstructor (U)::= P | P, T
 
     Operator (A)::= + | - | * | / | %
 
@@ -27,11 +29,9 @@ namespace ProbabilisticAssignmentLanguage
 
     ArithmeticExpression (E)::= N | IE | (E) | E1 A E2
 
-    ProbabilisticExpression (P)::= R | IP | (P) | P1 A P2 | P A E | E A P
+    ProbabilisticExpression (P)::= [R] | IP | (P) | P1 A P2 | P A E | E A P
 
-    ProbConstructor (R)::= [ RR ]
-
-    ProbElement (RR)::= (E, E) | (E, E), RR
+    ProbElement (R)::= (E, E) | (E, E), RR
     */
 
     public interface SyntaxTree { }
@@ -85,7 +85,7 @@ namespace ProbabilisticAssignmentLanguage
     // out P
     public struct Out : Command
     {
-        public Exp ProbOut;
+        public List<Exp> ProbsOut;
     }
     
     public interface Exp : SyntaxTree { }

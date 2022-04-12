@@ -10,9 +10,11 @@ namespace ProbabilisticAssignmentLanguage
         {
             Console.WriteLine("Hello World!");
 
-            string s = "prob x = [(0, 1), (1, 1)]; prob y = [(0, 1), (1, 1)]; prob z = x + y; observe !(z < 1); out z";
+            string s = "prob x = [(0, 1), (1, 1)]; prob y = [(0, 1), (1, 1)]; prob z = x + y; observe !(z < 1); out [z]";
             Language l = new Language();
-            SyntaxTree tree = l.TestParserWithExampleProgram(s);
+            var tre = l.TestTokenizerWithExampleProgram(s);
+            var tree = l.TestParserWithExampleProgram(s);
+            var treee = l.TestInterpreterWithExampleProgram(s);
             Console.WriteLine("Hello World!");
         }
     }
