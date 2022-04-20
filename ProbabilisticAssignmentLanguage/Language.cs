@@ -926,12 +926,33 @@ namespace ProbabilisticAssignmentLanguage
                         }
                         key.Remove(key.Length - 2, 2);
                         string keyString = key.ToString();
-                        if (output[k].TryGetValue(keyString, out int unused)) output[k][keyString] += weight;
+                        if (output[k].TryGetValue(keyString, out _)) output[k][keyString] += weight;
                         else output[k].Add(keyString, weight);
                     }
                 }
             }
+
+            for (int k = 0; k < masterOutList.Count; k++)
+            {
+                var keys = new List<string>(output[k].Keys);
+                int runningGCD = 0;
+                foreach (string key in keys)
+                {
+                    runningGCD = GCD(runningGCD, output[k][key]);
+                }
+                foreach (string key in keys)
+                {
+                    output[k][key] /= runningGCD;
+                }
+            }
+            
             return output;
+        }
+        private int GCD(int a, int b)
+        {
+            if (a == 0) return b;
+            else if (b == 0) return a;
+            else return GCD(b, a % b);
         }
 
         /// <summary>
