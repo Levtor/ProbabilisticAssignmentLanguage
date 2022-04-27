@@ -22,12 +22,12 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="tokens">a list for the tokens to be held in</param>
         /// <param name="numbers">a list for the numbers associated with IntVal tokens to be held in</param>
         /// <param name="variableNames">a list for the strings associated with VarName tokens to be held in</param>
-        private void Tokenizer(string input, Queue<Token> tokens, Queue<int> numbers, Queue<string> variableNames)
+        private void Tokenizer(string input, Queue<Token> tokens, Queue<ulong> numbers, Queue<string> variableNames)
         {
             tokens.Clear();
             numbers.Clear();
             variableNames.Clear();
-            int numToAdd = 0;
+            ulong numToAdd = 0;
             StringBuilder sb = new StringBuilder();
             TokenizerState state = TokenizerState.neutral;
 
@@ -40,7 +40,7 @@ namespace ProbabilisticAssignmentLanguage
                         else if (char.IsDigit(c))
                         {
                             numToAdd *= 10;
-                            numToAdd += c - '0';
+                            numToAdd += (ulong)(c - '0');
                             state = TokenizerState.midNum;
                         }
                         else
@@ -286,7 +286,7 @@ namespace ProbabilisticAssignmentLanguage
                         if (char.IsDigit(c))
                         {
                             numToAdd *= 10;
-                            numToAdd += c - '0';
+                            numToAdd += (ulong)(c - '0');
                         }
                         else if (char.IsWhiteSpace(c))
                         {
@@ -422,7 +422,7 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="numbers">a list for the numbers associated with IntVal tokens to be held in</param>
         /// <param name="variableNames">a list for the strings associated with VarName tokens to be held in</param>
         /// <returns>a syntax tree representing a command</returns>
-        private Command ParseCommand(Queue<Token> tokens, Queue<int> numbers, Queue<string> variableNames)
+        private Command ParseCommand(Queue<Token> tokens, Queue<ulong> numbers, Queue<string> variableNames)
         {
             Token next = tokens.Dequeue();
             Command commandTree = null;
@@ -516,7 +516,7 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="numbers">a list for the numbers associated with IntVal tokens to be held in</param>
         /// <param name="variableNames">a list for the strings associated with VarName tokens to be held in</param>
         /// <returns>a syntax tree representing an expression (arithmetic, boolean, probabilistic, etc.)</returns>
-        private Exp ParseExp(Queue<Token> tokens, Queue<int> numbers, Queue<string> variableNames)
+        private Exp ParseExp(Queue<Token> tokens, Queue<ulong> numbers, Queue<string> variableNames)
         {
             Token next = tokens.Dequeue();
             Exp expTree = null;
@@ -580,7 +580,7 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="numbers">a list for the numbers associated with IntVal tokens to be held in</param>
         /// <param name="variableNames">a list for the strings associated with VarName tokens to be held in</param>
         /// <returns>a syntax tree representing a probabilistic expression monad</returns>
-        private ProbMonad ParseProbMonad(Queue<Token> tokens, Queue<int> numbers, Queue<string> variableNames)
+        private ProbMonad ParseProbMonad(Queue<Token> tokens, Queue<ulong> numbers, Queue<string> variableNames)
         {
             ProbMonad newProbMonad = new ProbMonad { Elements = new List<ProbElement>() };
             bool go = true;
@@ -857,7 +857,7 @@ namespace ProbabilisticAssignmentLanguage
                     }
                     else throw new Exception("prob variable decared using non-arithmetic expression");
                 }
-                ProbMonad probVal = new ProbMonad { Elements = elts, Index = masterProbList.Count };
+                ProbMonad probVal = new ProbMonad { Elements = elts, Index = (uint)masterProbList.Count };
                 masterProbList.Add(probVal);
                 value = probVal;
                 return ExpressionType.Prob;
@@ -872,33 +872,33 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="masterObserveList">a list of observe statements</param>
         /// <param name="masterOutList">a list of out statements</param>
         /// <returns>a list of dictionaries representing each out statement's probability distribution when subject to all observe statements</returns>
-        private Dictionary<string, int>[] CalculateOutput(List<ProbMonad> masterProbList, List<Exp> masterObserveList, List<List<Exp>> masterOutList)
+        private Dictionary<string, ulong>[] CalculateOutput(List<ProbMonad> masterProbList, List<Exp> masterObserveList, List<List<Exp>> masterOutList)
         {
-            Dictionary<string, int>[] output = new Dictionary<string, int>[masterOutList.Count];
+            Dictionary<string, ulong>[] output = new Dictionary<string, ulong>[masterOutList.Count];
             for(int k = 0; k < masterOutList.Count; k++)
             {
-                output[k] = new Dictionary<string, int>();
+                output[k] = new Dictionary<string, ulong>();
             }
-            int[] indices = new int[masterProbList.Count];
-            int probNumber = 1;
+            uint[] indices = new uint[masterProbList.Count];
+            ulong probNumber = 1;
             for (int i = 0; i < masterProbList.Count; i++)
             {
-                probNumber *= masterProbList[i].Elements.Count;
+                probNumber *= (ulong)masterProbList[i].Elements.Count;
             }
-            for (int i = 0; i < probNumber; i++)
+            for (ulong i = 0; i < probNumber; i++)
             {
-                int copy = i;
+                ulong copy = i;
                 for (int j = 0; j < masterProbList.Count; j++)
                 {
-                    int n = masterProbList[j].Elements.Count; 
-                    indices[j] = copy % n;
+                    uint n = (uint)masterProbList[j].Elements.Count; 
+                    indices[j] = (uint)(copy % n);
                     copy /= n;
                 }
 
                 bool survivedObserves = true;
                 foreach (Exp observe in masterObserveList)
                 {
-                    if (InterpretProbExpression(observe, indices, masterProbList, out ExpressionType type) is BoolReducedProb brp)
+                    if (InterpretProbExpression(observe, indices, masterProbList, out ExpressionType expressionType) is BoolReducedProb brp)
                     {
                         if (!brp.Bool)
                         {
@@ -910,17 +910,25 @@ namespace ProbabilisticAssignmentLanguage
                 }
                 if (survivedObserves)
                 {
+                    ulong weight = 1;
+                    for (int k = 0; k < masterProbList.Count; k++)
+                    {
+                        if (masterProbList[k].Elements[(int)indices[k]].Weight is ArithMonad weightExp)
+                        {
+                            weight *= weightExp.Number;
+                        }
+                        else throw new Exception("Expression representing weight in a prob in the master prob list is not the correct type");
+                    }
+
                     for (int k = 0; k < masterOutList.Count; k++)
                     {
                         StringBuilder key = new StringBuilder();
-                        int weight = 1;
                         foreach (Exp outProb in masterOutList[k])
                         {
                             if (InterpretProbExpression(outProb, indices, masterProbList, out ExpressionType type) is ElementReducedProb erp)
                             {
                                 key.Append(erp.Value);
                                 key.Append(", ");
-                                weight *= erp.Weight;
                             }
                             else throw new Exception("out list has an expression in it that isn't a prob");
                         }
@@ -931,11 +939,11 @@ namespace ProbabilisticAssignmentLanguage
                     }
                 }
             }
-
+            
             for (int k = 0; k < masterOutList.Count; k++)
             {
                 var keys = new List<string>(output[k].Keys);
-                int runningGCD = 0;
+                ulong runningGCD = 0;
                 foreach (string key in keys)
                 {
                     runningGCD = GCD(runningGCD, output[k][key]);
@@ -948,7 +956,7 @@ namespace ProbabilisticAssignmentLanguage
             
             return output;
         }
-        private int GCD(int a, int b)
+        private ulong GCD(ulong a, ulong b)
         {
             if (a == 0) return b;
             else if (b == 0) return a;
@@ -971,8 +979,7 @@ namespace ProbabilisticAssignmentLanguage
         /// </summary>
         struct ElementReducedProb : ReducedProb
         {
-            public int Value;
-            public int Weight;
+            public ulong Value;
         }
         /// <summary>
         /// Calculates the boolean or value-weight pair value of a probabilistic expression at a specific point
@@ -982,7 +989,7 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="masterProbList">the list of basic probabilistic distributions defined in the program</param>
         /// <param name="type">an out variable that designates whether the returned expression is a boolean or a value-weight pair</param>
         /// <returns>the boolean or value-weight pair that the given probabilistic expression evaluates to at the given point</returns>
-        private ReducedProb InterpretProbExpression(Exp tree, int[] indices, List<ProbMonad> masterProbList, out ExpressionType type)
+        private ReducedProb InterpretProbExpression(Exp tree, uint[] indices, List<ProbMonad> masterProbList, out ExpressionType type)
         {
             if (tree is ExpCombine combine)
             {
@@ -998,35 +1005,30 @@ namespace ProbabilisticAssignmentLanguage
                         return new ElementReducedProb
                         {
                             Value = (subValue1 as ElementReducedProb?).Value.Value + (subValue2 as ElementReducedProb?).Value.Value,
-                            Weight = (subValue1 as ElementReducedProb?).Value.Weight * (subValue2 as ElementReducedProb?).Value.Weight,
                         };
                     case (ExpressionType.Prob, ExpressionType.Prob, Token.Minus):
                         type = ExpressionType.Prob;
                         return new ElementReducedProb
                         {
                             Value = (subValue1 as ElementReducedProb?).Value.Value - (subValue2 as ElementReducedProb?).Value.Value,
-                            Weight = (subValue1 as ElementReducedProb?).Value.Weight * (subValue2 as ElementReducedProb?).Value.Weight,
                         };
                     case (ExpressionType.Prob, ExpressionType.Prob, Token.Mult):
                         type = ExpressionType.Prob;
                         return new ElementReducedProb
                         {
                             Value = (subValue1 as ElementReducedProb?).Value.Value * (subValue2 as ElementReducedProb?).Value.Value,
-                            Weight = (subValue1 as ElementReducedProb?).Value.Weight * (subValue2 as ElementReducedProb?).Value.Weight,
                         };
                     case (ExpressionType.Prob, ExpressionType.Prob, Token.Div):
                         type = ExpressionType.Prob;
                         return new ElementReducedProb
                         {
                             Value = (subValue1 as ElementReducedProb?).Value.Value / (subValue2 as ElementReducedProb?).Value.Value,
-                            Weight = (subValue1 as ElementReducedProb?).Value.Weight * (subValue2 as ElementReducedProb?).Value.Weight,
                         };
                     case (ExpressionType.Prob, ExpressionType.Prob, Token.Mod):
                         type = ExpressionType.Prob;
                         return new ElementReducedProb
                         {
                             Value = (subValue1 as ElementReducedProb?).Value.Value % (subValue2 as ElementReducedProb?).Value.Value,
-                            Weight = (subValue1 as ElementReducedProb?).Value.Weight * (subValue2 as ElementReducedProb?).Value.Weight,
                         };
 
                     case (ExpressionType.Prob, ExpressionType.Prob, Token.Greater):
@@ -1063,7 +1065,7 @@ namespace ProbabilisticAssignmentLanguage
             else if (tree is ArithMonad arith)
             {
                 type = ExpressionType.Prob;
-                return new ElementReducedProb { Value = arith.Number, Weight = 1 };
+                return new ElementReducedProb { Value = arith.Number };
             }
             else if (tree is BoolMonad boolm)
             {
@@ -1073,20 +1075,19 @@ namespace ProbabilisticAssignmentLanguage
             else if (tree is ProbMonad prob)
             {
                 type = ExpressionType.Prob;
-                ProbElement currentElement = prob.Elements[indices[prob.Index]];
+                ProbElement currentElement = prob.Elements[(int)indices[prob.Index]];
                 return new ElementReducedProb
                 {
-                    Value = (currentElement.Value as ArithMonad?).Value.Number,
-                    Weight = (currentElement.Weight as ArithMonad?).Value.Number
+                    Value = (currentElement.Value as ArithMonad?).Value.Number
                 };
             }
             else throw new Exception("expression interpreter is trying to interpret something that isn't an expression (probabilistic)");
         }
 
-        public Dictionary<string, int>[] TestInterpreterWithExampleProgram(string s)
+        public Dictionary<string, ulong>[] RunInterpreterWithExampleProgram(string s)
         {
             Queue<Token> tokens = new Queue<Token>();
-            Queue<int> numbers = new Queue<int>();
+            Queue<ulong> numbers = new Queue<ulong>();
             Queue<string> variables = new Queue<string>();
             Tokenizer(s, tokens, numbers, variables);
             Command cmd = ParseCommand(tokens, numbers, variables);
@@ -1098,19 +1099,19 @@ namespace ProbabilisticAssignmentLanguage
             return CalculateOutput(masterProbList, masterObserveList, masterOutList);
         }
 
-        public SyntaxTree TestParserWithExampleProgram(string s)
+        public SyntaxTree RunParserWithExampleProgram(string s)
         {
             Queue<Token> tokens = new Queue<Token>();
-            Queue<int> numbers = new Queue<int>();
+            Queue<ulong> numbers = new Queue<ulong>();
             Queue<string> variables = new Queue<string>();
             Tokenizer(s, tokens, numbers, variables);
             return ParseCommand(tokens, numbers, variables);
         }
 
-        public (Queue<Token>, Queue<int>, Queue<string>) TestTokenizerWithExampleProgram(string s)
+        public (Queue<Token>, Queue<ulong>, Queue<string>) RunTokenizerWithExampleProgram(string s)
         {
             Queue<Token> tokens = new Queue<Token>();
-            Queue<int> numbers = new Queue<int>();
+            Queue<ulong> numbers = new Queue<ulong>();
             Queue<string> variables = new Queue<string>();
             Tokenizer(s, tokens, numbers, variables);
             return (tokens, numbers, variables);

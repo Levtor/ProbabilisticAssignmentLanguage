@@ -1,0 +1,5 @@
+﻿prob x = [(0, 1), (1, 1)];
+prob y = [(0, 1), (1, 1)];
+prob z = x + y;
+observe !(z < 1);
+out [z]

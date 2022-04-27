@@ -1,0 +1,23 @@
+﻿prob Earthquake = [(0, 999), (1, 1)];
+prob Burglary = [(0, 99), (1, 1)];
+prob Alarm = 1-((1-Earthquake)*(1-Burglary));
+
+prob Pe0 = [(0, 01), (1, 99)];
+prob Pe1 = [(0, 40), (1, 60)];
+prob PmultE = [(0, 1), (1, 1)];
+observe ((Earthquake=0) & (PmultE=1)) | ((Earthquake=1) & (PmultE=0));
+prob PhoneWorking = (PmultE*Pe0) + ((1-PmultE)*Pe1);
+
+prob Me0a0 = [(0, 4), (1, 1)];
+prob Me0a1 = [(0, 2), (1, 3)];
+prob Me1a0 = [(0, 4), (1, 1)];
+prob Me1a1 = [(0, 1), (1, 4)];
+prob MmultE = [(0, 1), (1, 1)];
+prob MmultA = [(0, 1), (1, 1)];
+observe ((Earthquake=0) & (MmultE=1)) | ((Earthquake=1) & (MmultE=0));
+observe ((Alarm=0) & (MmultA=1)) | ((Alarm=1) & (MmultA=0));
+prob MaryWakes = (MmultE*MmultA*Me0a0) + (MmultE*(1-MmultA)*Me0a1) + ((1-MmultE)*MmultA*Me1a0) + ((1-MmultE)*(1-MmultA)*Me1a1);
+
+prob Called = MaryWakes * PhoneWorking;
+observe(Called = 1);
+out [Burglary]

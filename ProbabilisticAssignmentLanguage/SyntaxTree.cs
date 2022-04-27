@@ -105,7 +105,7 @@ namespace ProbabilisticAssignmentLanguage
     }
     public struct ArithMonad : Exp
     {
-        public int Number;
+        public ulong Number;
     }
     public struct BoolMonad : Exp
     {
@@ -114,7 +114,7 @@ namespace ProbabilisticAssignmentLanguage
     public struct ProbMonad : Exp
     {
         public List<ProbElement> Elements;
-        public int Index;
+        public uint Index;
     }
     public struct ProbElement
     {

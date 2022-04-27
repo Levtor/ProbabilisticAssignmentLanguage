@@ -1,0 +1,31 @@
+﻿prob I = [(0, 7), (1, 3)];
+prob D = [(0, 3), (1, 2)];
+
+prob Si0 = [(0, 19), (1, 1)];
+prob Si1 = [(0, 1), (1, 4)];
+prob SmultI = [(0, 1), (1, 1)];
+observe ((I=0) & (SmultI=1)) | ((I=1) & (SmultI=0));
+prob S = (SmultI*Si0) + ((1-SmultI)*Si1);
+
+prob Gi0d0 = [(0, 3), (1, 7)];
+prob Gi0d1 = [(0, 1), (1, 19)];
+prob Gi1d0 = [(0, 9), (1, 1)];
+prob Gi1d1 = [(0, 1), (1, 1)];
+prob GmultI = [(0, 1), (1, 1)];
+prob GmultD = [(0, 1), (1, 1)];
+observe ((I=0) & (GmultI=1)) | ((I=1) & (GmultI=0));
+observe ((D=0) & (GmultD=1)) | ((D=1) & (GmultD=0));
+prob G = (GmultI*GmultD*Gi0d0) + (GmultI*(1-GmultD)*Gi0d1) + ((1-GmultI)*GmultD*Gi1d0) + ((1-GmultI)*(1-GmultD)*Gi1d1);
+
+prob Lg0 = [(0, 9), (1, 1)];
+prob Lg1 = [(0, 2), (1, 3)];
+prob LmultG = [(0, 1), (1, 1)];
+observe ((G=0) & (LmultG=1)) | ((G=1) & (LmultG=0));
+prob L = (LmultG*Lg0) + ((1-LmultG)*Lg1);
+
+out [I, D, S, G, L];
+out [I];
+out [D];
+out [S, I];
+out [G, I, D];
+out [L, G]
