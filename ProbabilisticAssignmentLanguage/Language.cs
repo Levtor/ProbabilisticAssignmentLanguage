@@ -22,12 +22,12 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="tokens">a list for the tokens to be held in</param>
         /// <param name="numbers">a list for the numbers associated with IntVal tokens to be held in</param>
         /// <param name="variableNames">a list for the strings associated with VarName tokens to be held in</param>
-        private void Tokenizer(string input, Queue<Token> tokens, Queue<ulong> numbers, Queue<string> variableNames)
+        private void Tokenizer(string input, Queue<Token> tokens, Queue<long> numbers, Queue<string> variableNames)
         {
             tokens.Clear();
             numbers.Clear();
             variableNames.Clear();
-            ulong numToAdd = 0;
+            long numToAdd = 0;
             StringBuilder sb = new StringBuilder();
             TokenizerState state = TokenizerState.neutral;
 
@@ -40,7 +40,7 @@ namespace ProbabilisticAssignmentLanguage
                         else if (char.IsDigit(c))
                         {
                             numToAdd *= 10;
-                            numToAdd += (ulong)(c - '0');
+                            numToAdd += (c - '0');
                             state = TokenizerState.midNum;
                         }
                         else
@@ -286,7 +286,7 @@ namespace ProbabilisticAssignmentLanguage
                         if (char.IsDigit(c))
                         {
                             numToAdd *= 10;
-                            numToAdd += (ulong)(c - '0');
+                            numToAdd += (c - '0');
                         }
                         else if (char.IsWhiteSpace(c))
                         {
@@ -384,6 +384,8 @@ namespace ProbabilisticAssignmentLanguage
         {
             switch (s)
             {
+                case "skip":
+                    return Token.Skip;
                 case "observe":
                     return Token.Observe;
                 case "out":
@@ -422,7 +424,7 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="numbers">a list for the numbers associated with IntVal tokens to be held in</param>
         /// <param name="variableNames">a list for the strings associated with VarName tokens to be held in</param>
         /// <returns>a syntax tree representing a command</returns>
-        private Command ParseCommand(Queue<Token> tokens, Queue<ulong> numbers, Queue<string> variableNames)
+        private Command ParseCommand(Queue<Token> tokens, Queue<long> numbers, Queue<string> variableNames)
         {
             Token next = tokens.Dequeue();
             Command commandTree = null;
@@ -456,8 +458,7 @@ namespace ProbabilisticAssignmentLanguage
                     ite.CommandThen = ParseCommand(tokens, numbers, variableNames);
                     if (tokens.Dequeue() != Token.Else) throw new Exception("'Else' expected but not found");
                     ite.CommandElse = ParseCommand(tokens, numbers, variableNames);
-                    if (tokens.Dequeue() != Token.Semi) throw new Exception("';' expected but not found (if-then-else)");
-                    if (tokens.Dequeue() != Token.Semi) throw new Exception("'End' expected but not found (if-then-else)");
+                    if (tokens.Dequeue() != Token.End) throw new Exception("'End' expected but not found (if-then-else)");
                     commandTree = ite;
                     break;
                 case Token.While:
@@ -465,8 +466,7 @@ namespace ProbabilisticAssignmentLanguage
                     wd.BoolWhile = ParseExp(tokens, numbers, variableNames);
                     if (tokens.Dequeue() != Token.Do) throw new Exception("'Do' expected but not found");
                     wd.Command = ParseCommand(tokens, numbers, variableNames);
-                    if (tokens.Dequeue() != Token.Semi) throw new Exception("';' expected but not found (while-do)");
-                    if (tokens.Dequeue() != Token.Semi) throw new Exception("'End' expected but not found (while-do)");
+                    if (tokens.Dequeue() != Token.End) throw new Exception("'End' expected but not found (while-do)");
                     commandTree = wd;
                     break;
                 case Token.BoolDecl:
@@ -503,8 +503,15 @@ namespace ProbabilisticAssignmentLanguage
             {
                 next = tokens.Dequeue();
                 if (next == Token.Semi)
-                    commandTree = new Semicolon { Command1 = commandTree, Command2 = ParseCommand(tokens, numbers, variableNames) };
-
+                {
+                    if (tokens.Count == 0) return commandTree;
+                    else
+                    {
+                        next = tokens.Peek();
+                        if (next == Token.End || next == Token.Else) return commandTree;
+                        else commandTree = new Semicolon { Command1 = commandTree, Command2 = ParseCommand(tokens, numbers, variableNames) };
+                    }
+                }
             }
             return commandTree;
         }
@@ -516,7 +523,7 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="numbers">a list for the numbers associated with IntVal tokens to be held in</param>
         /// <param name="variableNames">a list for the strings associated with VarName tokens to be held in</param>
         /// <returns>a syntax tree representing an expression (arithmetic, boolean, probabilistic, etc.)</returns>
-        private Exp ParseExp(Queue<Token> tokens, Queue<ulong> numbers, Queue<string> variableNames)
+        private Exp ParseExp(Queue<Token> tokens, Queue<long> numbers, Queue<string> variableNames)
         {
             Token next = tokens.Dequeue();
             Exp expTree = null;
@@ -580,7 +587,7 @@ namespace ProbabilisticAssignmentLanguage
         /// <param name="numbers">a list for the numbers associated with IntVal tokens to be held in</param>
         /// <param name="variableNames">a list for the strings associated with VarName tokens to be held in</param>
         /// <returns>a syntax tree representing a probabilistic expression monad</returns>
-        private ProbMonad ParseProbMonad(Queue<Token> tokens, Queue<ulong> numbers, Queue<string> variableNames)
+        private ProbMonad ParseProbMonad(Queue<Token> tokens, Queue<long> numbers, Queue<string> variableNames)
         {
             ProbMonad newProbMonad = new ProbMonad { Elements = new List<ProbElement>() };
             bool go = true;
@@ -651,19 +658,31 @@ namespace ProbabilisticAssignmentLanguage
             else if (tree is DeclareInt di)
             {
                 et = InterpretExpression(di.Integer, variables, masterProbList, out exp);
-                if (et == ExpressionType.Arith && exp is ArithMonad) variables.Add(di.VarName, exp);
+                if (et == ExpressionType.Arith && exp is ArithMonad)
+                {
+                    if (variables.TryGetValue(di.VarName, out _)) variables[di.VarName] = exp;
+                    else variables.Add(di.VarName, exp);
+                }
                 else throw new Exception("int variable declared with expression that is not an int");
             }
             else if (tree is DeclareBool db)
             {
                 et = InterpretExpression(db.Bool, variables, masterProbList, out exp);
-                if (et == ExpressionType.Bool && exp is BoolMonad) variables.Add(db.VarName, exp);
+                if (et == ExpressionType.Bool && exp is BoolMonad)
+                {
+                    if (variables.TryGetValue(db.VarName, out _)) variables[db.VarName] = exp;
+                    else variables.Add(db.VarName, exp);
+                }
                 else throw new Exception("bool variable declared with expression that is not a bool");
             }
             else if (tree is DeclareProb dp)
             {
                 et = InterpretExpression(dp.Prob, variables, masterProbList, out exp);
-                if (et == ExpressionType.Prob) variables.Add(dp.VarName, exp);
+                if (et == ExpressionType.Prob)
+                {
+                    if (variables.TryGetValue(dp.VarName, out _)) variables[dp.VarName] = exp;
+                    else variables.Add(dp.VarName, exp);
+                }
                 else throw new Exception("prob variable declared with expression that is not a prob");
             }
             else if (tree is Observe observe)
@@ -915,7 +934,7 @@ namespace ProbabilisticAssignmentLanguage
                     {
                         if (masterProbList[k].Elements[(int)indices[k]].Weight is ArithMonad weightExp)
                         {
-                            weight *= weightExp.Number;
+                            weight *= (ulong)weightExp.Number;
                         }
                         else throw new Exception("Expression representing weight in a prob in the master prob list is not the correct type");
                     }
@@ -979,7 +998,7 @@ namespace ProbabilisticAssignmentLanguage
         /// </summary>
         struct ElementReducedProb : ReducedProb
         {
-            public ulong Value;
+            public long Value;
         }
         /// <summary>
         /// Calculates the boolean or value-weight pair value of a probabilistic expression at a specific point
@@ -1087,7 +1106,7 @@ namespace ProbabilisticAssignmentLanguage
         public Dictionary<string, ulong>[] RunInterpreterWithExampleProgram(string s)
         {
             Queue<Token> tokens = new Queue<Token>();
-            Queue<ulong> numbers = new Queue<ulong>();
+            Queue<long> numbers = new Queue<long>();
             Queue<string> variables = new Queue<string>();
             Tokenizer(s, tokens, numbers, variables);
             Command cmd = ParseCommand(tokens, numbers, variables);
@@ -1102,16 +1121,16 @@ namespace ProbabilisticAssignmentLanguage
         public SyntaxTree RunParserWithExampleProgram(string s)
         {
             Queue<Token> tokens = new Queue<Token>();
-            Queue<ulong> numbers = new Queue<ulong>();
+            Queue<long> numbers = new Queue<long>();
             Queue<string> variables = new Queue<string>();
             Tokenizer(s, tokens, numbers, variables);
             return ParseCommand(tokens, numbers, variables);
         }
 
-        public (Queue<Token>, Queue<ulong>, Queue<string>) RunTokenizerWithExampleProgram(string s)
+        public (Queue<Token>, Queue<long>, Queue<string>) RunTokenizerWithExampleProgram(string s)
         {
             Queue<Token> tokens = new Queue<Token>();
-            Queue<ulong> numbers = new Queue<ulong>();
+            Queue<long> numbers = new Queue<long>();
             Queue<string> variables = new Queue<string>();
             Tokenizer(s, tokens, numbers, variables);
             return (tokens, numbers, variables);

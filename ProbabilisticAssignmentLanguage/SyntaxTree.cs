@@ -5,7 +5,7 @@ namespace ProbabilisticAssignmentLanguage
     /* SYNTAX:
 
     boolean (O)::= true | false
-    integer (N)::= strings of digits
+    integer (N)::= strings of digits (only positive numbers)
     TypeDefinition (IB, IE, and IP)::= strings of non-key-symbol characters, starting with a non-digit that are not key-words
 
     Command (C)::=
@@ -105,7 +105,7 @@ namespace ProbabilisticAssignmentLanguage
     }
     public struct ArithMonad : Exp
     {
-        public ulong Number;
+        public long Number;
     }
     public struct BoolMonad : Exp
     {

@@ -1,0 +1,61 @@
+﻿bool boolean = true;
+int integer = 12;
+
+if true then
+	int iftrue = 1;
+else 
+	int iftrue = 0;
+end;
+prob iftrueprob = [(iftrue, 1)];
+
+if false then
+	int iffalse = 0;
+else 
+	int iffalse = 1;
+end;
+prob iffalseprob = [(iffalse, 1)];
+
+int whilefalse = 1;
+while false do
+	int whilefalse = 0;
+end;
+prob whilefalseprob = [(whilefalse, 1)];
+
+int whiletrue = 0;
+while whiletrue < 5 do
+	int whiletrue = whiletrue + 1;
+end;
+prob whiletrueprob = [(whiletrue, 1)];
+
+int arithtest1 = 12 + 3 - 5 * 17 / 7 % 11;
+int arithtest2 = (((((1 + 3) - 5) * 17) / 7) % 11);
+prob arithtestprob = [(arithtest1, 1), (arithtest2, 1)];
+
+bool testboolcombine = ((1 = 1) & (2 > 1) & (1 < 2)) & !((1 = 2) | (1 > 2) | (2 < 1));
+if testboolcombine then
+	int boolcombine = 1;
+else 
+	skip;
+end;
+prob boolcombinetestprob = [(boolcombine, 1)];
+
+prob oneElt = [(1, 1)];
+prob one2Elt = [(2, 1)];
+prob twoElt = [(1, 1), (2, 1)];
+prob threeElt = [(1, 1), (2, 1), (3, 1)];
+
+prob probarithtest1 = (oneElt + twoElt) + (oneElt - twoElt) + (oneElt * twoElt) + (oneElt / twoElt) + (oneElt % twoElt);
+prob probarithtest2 = (1 + twoElt) + (1 - twoElt) + (1 * twoElt) + (1 / twoElt) + (1 % twoElt);
+prob probarithtest3 = (twoElt + 1) + (twoElt - 1) + (twoElt * 1) + (twoElt / 1) + (twoElt % 2);
+
+observe ((oneElt = oneElt) & (one2Elt > oneElt) & (oneElt < one2Elt) & (1 = oneElt) & (2 > oneElt) & (0 < oneElt) & (oneElt = 1) & (oneElt < 2) & (oneElt > 0))  &  !((oneElt = one2Elt) & (oneElt > oneElt) & (oneElt < oneElt) & (2 = oneElt) & (1 > oneElt) & (1 < oneElt) & (oneElt = 2) & (oneElt < 1) & (oneElt > 1));
+
+out [iftrueprob];
+out [iffalseprob];
+out [whilefalseprob];
+out [whiletrueprob];
+out [arithtestprob];
+out [boolcombinetestprob];
+out [probarithtest1];
+out [probarithtest2];
+out [probarithtest3];

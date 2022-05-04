@@ -15,10 +15,14 @@ namespace ProbabilisticAssignmentLanguage
             string figure6b = File.ReadAllText(path + "figure6b.txt");
             string figure15 = File.ReadAllText(path + "figure15.txt");
 
+            string testerProgram = File.ReadAllText(path + "testerProgram.txt");
+
             PrintOutput(figure1, "figure1");
             PrintOutput(figure6a, "figure6a");
             PrintOutput(figure6b, "figure6b");
             PrintOutput(figure15, "figure15");
+            (Queue<Token>, Queue<long>, Queue<string>) llllllll = new Language().RunTokenizerWithExampleProgram(testerProgram);
+            PrintOutput(testerProgram, "testerProgram");
         }
 
         private static void PrintOutput(string program, string programName)
