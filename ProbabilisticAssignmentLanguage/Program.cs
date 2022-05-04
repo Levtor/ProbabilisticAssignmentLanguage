@@ -10,33 +10,22 @@ namespace ProbabilisticAssignmentLanguage
         static void Main(string[] args)
         {
             string path = "C:\\Users\\Joseph\\source\\repos\\ProbabilisticAssignmentLanguage\\ProbabilisticAssignmentLanguage\\ProgramTextfiles\\";
-            string figure1 = File.ReadAllText(path + "figure1.txt");
-            string figure6a = File.ReadAllText(path + "figure6a.txt");
-            string figure6b = File.ReadAllText(path + "figure6b.txt");
-            string figure15 = File.ReadAllText(path + "figure15.txt");
+            Language figure1 = new Language(File.ReadAllText(path + "figure1.txt"));
+            Language figure6a = new Language(File.ReadAllText(path + "figure6a.txt"));
+            Language figure6b = new Language(File.ReadAllText(path + "figure6b.txt"));
+            Language figure15 = new Language(File.ReadAllText(path + "figure15.txt"));
+            Language testerProgram = new Language(File.ReadAllText(path + "testerProgram.txt"));
 
-            string testerProgram = File.ReadAllText(path + "testerProgram.txt");
-
-            PrintOutput(figure1, "figure1");
-            PrintOutput(figure6a, "figure6a");
-            PrintOutput(figure6b, "figure6b");
-            PrintOutput(figure15, "figure15");
-            (Queue<Token>, Queue<long>, Queue<string>) llllllll = new Language().RunTokenizerWithExampleProgram(testerProgram);
-            PrintOutput(testerProgram, "testerProgram");
-        }
-
-        private static void PrintOutput(string program, string programName)
-        {
-            Console.WriteLine("Program " + programName + "'s output:");
-            Dictionary<string, ulong>[] dicts = new Language().RunInterpreterWithExampleProgram(program);
-            foreach (Dictionary<string, ulong> dict in dicts)
-            {
-                foreach (string key in dict.Keys)
-                {
-                    Console.WriteLine(key + ": " + dict[key]);
-                }
-                Console.WriteLine("");
-            }
+            Console.WriteLine("figure1 output:");
+            figure1.PrintOutput();
+            Console.WriteLine("figure6aa output:");
+            figure6a.PrintOutput();
+            Console.WriteLine("figure6b output:");
+            figure6b.PrintOutput();
+            Console.WriteLine("figure15 output:");
+            figure15.PrintOutput();
+            Console.WriteLine("testerProgram output:");
+            testerProgram.PrintOutput();
         }
     }
 }

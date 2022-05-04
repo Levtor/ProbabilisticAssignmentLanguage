@@ -1103,37 +1103,38 @@ namespace ProbabilisticAssignmentLanguage
             else throw new Exception("expression interpreter is trying to interpret something that isn't an expression (probabilistic)");
         }
 
-        public Dictionary<string, ulong>[] RunInterpreterWithExampleProgram(string s)
+
+        public Dictionary<string, ulong>[] Output;
+
+        public Language(string program)
         {
             Queue<Token> tokens = new Queue<Token>();
             Queue<long> numbers = new Queue<long>();
             Queue<string> variables = new Queue<string>();
-            Tokenizer(s, tokens, numbers, variables);
+            Tokenizer(program, tokens, numbers, variables);
+            // pause here to test tokenizer
             Command cmd = ParseCommand(tokens, numbers, variables);
+            // pause here to test parser
             Dictionary<string, Exp> variablesDict = new Dictionary<string, Exp>();
             List<ProbMonad> masterProbList = new List<ProbMonad>();
             List<Exp> masterObserveList = new List<Exp>();
             List<List<Exp>> masterOutList = new List<List<Exp>>();
             InterpretCommand(cmd, variablesDict, masterProbList, masterObserveList, masterOutList);
-            return CalculateOutput(masterProbList, masterObserveList, masterOutList);
+            // pause here to test interpreter (before output is calculated)
+            Output = CalculateOutput(masterProbList, masterObserveList, masterOutList);
         }
 
-        public SyntaxTree RunParserWithExampleProgram(string s)
-        {
-            Queue<Token> tokens = new Queue<Token>();
-            Queue<long> numbers = new Queue<long>();
-            Queue<string> variables = new Queue<string>();
-            Tokenizer(s, tokens, numbers, variables);
-            return ParseCommand(tokens, numbers, variables);
-        }
 
-        public (Queue<Token>, Queue<long>, Queue<string>) RunTokenizerWithExampleProgram(string s)
+        public void PrintOutput()
         {
-            Queue<Token> tokens = new Queue<Token>();
-            Queue<long> numbers = new Queue<long>();
-            Queue<string> variables = new Queue<string>();
-            Tokenizer(s, tokens, numbers, variables);
-            return (tokens, numbers, variables);
+            foreach (Dictionary<string, ulong> dict in Output)
+            {
+                foreach (string key in dict.Keys)
+                {
+                    Console.WriteLine(key + ": " + dict[key]);
+                }
+                Console.WriteLine("");
+            }
         }
     }
 }
